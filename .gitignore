@@ -165,3 +165,11 @@ experiments/*
 wandb/*
 data/*
 JaxSEQ/*
+
+# Temporary files
+*.e
+*.o
+results.json
+interactions.pkl
+lab.ipynb
+results/

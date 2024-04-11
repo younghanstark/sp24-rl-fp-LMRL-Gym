@@ -95,7 +95,7 @@ python -m pip install -e .
 conda env create -f environment.yml
 conda activate LLM_RL
 python -m pip install --upgrade pip
-conda install 'jaxlib=*=*cuda*' jax cuda-nvcc -c conda-forge -c nvidia
+pip install --upgrade "jax[cuda12_pip]==0.4.7" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
 python -m pip install -e .
 ```
 
