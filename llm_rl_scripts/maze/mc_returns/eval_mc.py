@@ -70,9 +70,10 @@ def main(
     tokenizer = AutoTokenizer.from_pretrained('gpt2')
     tokenizer.add_special_tokens({'pad_token': '<|pad|>'})
 
-
-
-    mesh = load_mesh((data_mesh_shape, fsdp_mesh_shape, model_mesh_shape), ('dp', 'fsdp', 'mp'))
+    # By default, jax uses all available GPU devices for sharding.
+    # However, an error occurs since there is 3 GPUs in a single node, in TACC environment.
+    # I manually made a modification in JaxSEQ/JaxSeq/utils.py/load_mesh to use only 2 GPUs in the node.
+    mesh = load_mesh((data_mesh_shape, fsdp_mesh_shape, model_mesh_shape), ('dp', 'fsdp', 'mp'), num_gpus=2)
     is_main_process = jax.process_index() == 0
     print(f"Mesh: {mesh}")
     print(f"Is main process: {is_main_process}")

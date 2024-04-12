@@ -35,10 +35,10 @@ from LLM_RL.algorithms.mc_returns.train import train_loop
 from LLM_RL.algorithms.mc_returns.data import MCData, MCDataset
 from LLM_RL.algorithms.mc_returns.score_fn import build_mc_score_fn
 
-def main(
+def main( # tyro automatically detects the arguments of the function - so all the arguments below works as CLI arguments
     model_load_mode: ModelLoadMode, 
     model_load_path: str, 
-    train_data_path: str, 
+    train_data_path: str, # e.g. /work/09720/yhpark/rl-llm-bench-dataset/maze/fully_observed_maze_data.jsonl
 
     /,  # Mark the end of positional arguments.
 
@@ -104,12 +104,14 @@ def main(
     tokenizer = GPT2TokenizerFast.from_pretrained('gpt2')
     tokenizer.add_special_tokens({'pad_token': '<|pad|>'})
 
+    # mesh is a concept related to sharding in jax - more details in the jax doc
     mesh = load_mesh((data_mesh_shape, fsdp_mesh_shape, model_mesh_shape), ('dp', 'fsdp', 'mp'))
     is_main_process = jax.process_index() == 0
     print(f"Mesh: {mesh}")
     print(f"Is main process: {is_main_process}")
     
     def mc_data_generator(data_name):
+        # given a dataset(.jsonl format), 
         with open(data_name, "r") as f:
             for item in f:
                 obj = json.loads(item)
@@ -427,4 +429,5 @@ def main(
     )
 
 if __name__ == "__main__":
+    # tyro is a tool provides an easy way to generate CLI
     tyro.cli(main)
