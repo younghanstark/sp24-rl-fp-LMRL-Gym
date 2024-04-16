@@ -25,13 +25,18 @@ from LLM_RL.algorithms.value_rl_base.gpt2.interface import GPT2ValuePolicy, GPT2
 from LLM_RL.heads.mlp_head import load_params as load_head_params
 from LLM_RL.algorithms.mc_returns.score_fn import build_mc_score_fn
 
+# tyro is an easy way to generate CLI tool
+# it automatically converts the arguments of a function into command line arguments
 def main(
     model_load_mode: ModelLoadMode, 
     model_load_path: str,
+    # off-policy?
     pi_beta_load_mode: ModelLoadMode,
     pi_beta_load_path: str,
 
     /,  # Mark the end of positional arguments.
+
+    num_gpus: int=2,
 
     outputs_path: Optional[str]=None, 
 
@@ -73,7 +78,7 @@ def main(
     # By default, jax uses all available GPU devices for sharding.
     # However, an error occurs since there is 3 GPUs in a single node, in TACC environment.
     # I manually made a modification in JaxSEQ/JaxSeq/utils.py/load_mesh to use only 2 GPUs in the node.
-    mesh = load_mesh((data_mesh_shape, fsdp_mesh_shape, model_mesh_shape), ('dp', 'fsdp', 'mp'), num_gpus=2)
+    mesh = load_mesh((data_mesh_shape, fsdp_mesh_shape, model_mesh_shape), ('dp', 'fsdp', 'mp'), num_gpus=num_gpus)
     is_main_process = jax.process_index() == 0
     print(f"Mesh: {mesh}")
     print(f"Is main process: {is_main_process}")
@@ -89,7 +94,7 @@ def main(
         possible_positions.remove(tuple(goal.tolist()))
     optimal_policy = maze_solver(1-env.maze, list(map(tuple, env.valid_goals.tolist())))
 
-    pi_beta_prng_key = jax.random.PRNGKey(0)
+    pi_beta_prng_key = jax.random.PRNGKey(0) # not sure what actually prng key is
     pi_beta_params, _ = load_params(
         model_load_mode=pi_beta_load_mode, 
         model_load_path=convert_path(pi_beta_load_path) if pi_beta_load_mode != ModelLoadMode.HF else pi_beta_load_path, 
@@ -113,6 +118,8 @@ def main(
         params_dtype=jnp.float32, 
     )
 
+    # q_head: MLP(Multi Layer Perceptron) head
+    # not sure for its purpose
     q_head_params, q_head = load_head_params(
         model_load_mode=model_load_mode.value,
         model_load_path=convert_path(os.path.join(model_load_path, 'q_head')),
@@ -199,7 +206,7 @@ def main(
             results = dict()
             avg_dict = defaultdict(float)
             for position in possible_positions:
-                position = tuple(position)
+                position = tuple(position) # e.g. (1, 1)
                 interactions[str(position)], results[str(position)] = text_env_eval(
                     env=env,
                     policy=policy,
